@@ -7,8 +7,8 @@
     <meta name="description" content="Professional QR Ticket Validation System for Events">
     <title>QR Ticket Validator</title>
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22QR%20Ticket%20Validator%22%2C%22short_name%22%3A%22Ticket%20Scan%22%2C%22description%22%3A%22Professional%20Event%20Ticket%20Scanner%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%234CAF50%22%2C%22theme_color%22%3A%22%234CAF50%22%2C%22orientation%22%3A%22any%22%2C%22scope%22%3A%22.%2F%22%2C%22categories%22%3A%5B%22productivity%22%2C%22utilities%22%5D%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%234CAF50'%2F%3E%3Ctext%20x%3D'50'%20y%3D'70'%20font-family%3D'Arial'%20font-size%3D'60'%20text-anchor%3D'middle'%20fill%3D'white'%3E%F0%9F%93%9B%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml'%22%7D%5D%7D">
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     
     <style>
         /* CSS Variables */
@@ -37,12 +37,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: var(--text-dark);
-        }
-        
-        /* Main Container */
-        .main-container {
-            display: none;
-            min-height: 100vh;
         }
         
         /* Login Screen */
@@ -197,10 +191,9 @@
             overflow: hidden;
         }
         
-        #scanner-viewport {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        #qr-reader {
+            width: 100% !important;
+            height: 100% !important;
         }
         
         .scanner-overlay {
@@ -217,25 +210,28 @@
         }
         
         .scan-box {
-            width: 300px;
-            height: 300px;
-            border: 2px solid var(--primary-color);
-            border-radius: 20px;
+            width: 250px;
+            height: 250px;
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
             position: relative;
             margin: 20px;
         }
         
-        .scan-line {
+        .scan-box::before {
+            content: '';
             position: absolute;
-            width: 100%;
-            height: 3px;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
             background: var(--primary-color);
-            animation: scan 2s ease-in-out infinite;
+            animation: scanLine 2s linear infinite;
         }
         
-        @keyframes scan {
-            0%, 100% { top: 0; }
-            50% { top: 100%; }
+        @keyframes scanLine {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(246px); }
         }
         
         .scanner-instructions {
@@ -614,8 +610,8 @@
             }
             
             .scan-box {
-                width: 250px;
-                height: 250px;
+                width: 200px;
+                height: 200px;
             }
             
             .button-group {
@@ -636,7 +632,7 @@
             <div class="login-form" id="adminLoginForm">
                 <h2 style="color: white; text-align: center; margin-bottom: 10px;">Admin Login</h2>
                 <p style="color: rgba(255, 255, 255, 0.7); text-align: center; margin-bottom: 20px; font-size: 0.9rem;">
-                    please enter your details below
+                    Default: admin / admin123
                 </p>
                 <div class="form-group">
                     <label for="adminUsername">Username</label>
@@ -678,11 +674,9 @@
         </div>
         
         <div class="camera-container">
-            <video id="scanner-viewport"></video>
+            <div id="qr-reader"></div>
             <div class="scanner-overlay">
-                <div class="scan-box">
-                    <div class="scan-line"></div>
-                </div>
+                <div class="scan-box"></div>
                 <div class="scanner-instructions">
                     <h3>Point camera at QR code</h3>
                     <p>Align QR code within the frame to scan</p>
@@ -754,9 +748,9 @@
                     <h3 style="margin-bottom: 20px; color: #2c3e50;">Load Ticket Data</h3>
                     <div style="background: #e8f4fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--secondary-color);">
                         <h4 style="color: #1565C0; margin-bottom: 10px;">📋 Expected Format:</h4>
-                        <div style="font-size: 0.9rem; color: #666;">Date | Time | Name | Email | Phone | Ticket Type | Quantity | Ticket ID</div>
+                        <div style="font-size: 0.9rem; color: #666;">Date Time | Name | Email | Phone | Ticket Type | Quantity | Ticket ID | Amount | Event | Time | Date | Venue</div>
                         <div style="background: white; padding: 10px; border-radius: 5px; margin-top: 10px; font-family: monospace; font-size: 12px;">
-                            12/28/2025 21:55:39  Jacob Michelo  jcbmichelo@gmail.com  0979140681  Double : 2 people [ k600]  1  NOL-1766951741348
+                            12/28/2025 21:55:39  Jacob Michelo  jcbmichelo@gmail.com  0979140681  Double : 2 people [ k600]  1  NOL-1766951741348  600  FAMILY MATAZ & a short story  19:30  February 14, 2026.  MKANGO GOLF VIEW
                         </div>
                     </div>
                     
@@ -822,7 +816,7 @@
                 ADMIN_AUTH: 'ticket_validator_admin_auth',
                 SCANNER_NAME: 'ticket_validator_scanner_name'
             },
-            SYNC_INTERVAL: 30000, // 30 seconds
+            SYNC_INTERVAL: 30000,
             MAX_SCAN_HISTORY: 100
         };
 
@@ -913,18 +907,18 @@
                         
                         if (parts.length >= 8) {
                             const ticket = {
-                                id: parts[7]?.trim() || `TICKET-${Date.now()}-${index}`,
+                                id: parts[6]?.trim() || `TICKET-${Date.now()}-${index}`,
                                 purchaseDateTime: parts[0] || new Date().toLocaleString(),
-                                name: parts[2] || 'Unknown',
-                                email: parts[3] || '',
-                                phone: parts[4] || '',
-                                ticketType: parts[5] || 'General',
-                                quantity: parseInt(parts[6]) || 1,
+                                name: parts[1] || 'Unknown',
+                                email: parts[2] || '',
+                                phone: parts[3] || '',
+                                ticketType: parts[4] || 'General',
+                                quantity: parseInt(parts[5]) || 1,
+                                amount: parts[7] || '0',
                                 event: parts[8] || 'Event',
                                 eventTime: parts[9] || '',
                                 eventDate: parts[10] || '',
                                 venue: parts.slice(11).join(' ') || 'Venue',
-                                amount: parts[12] || '0',
                                 used: false,
                                 usedAt: null,
                                 scannedBy: null,
@@ -962,7 +956,7 @@
                         status: 'used',
                         icon: '⚠️',
                         message: 'ALREADY USED',
-                        submessage: `Previously scanned at ${ticket.usedAt || 'unknown time'}`,
+                        submessage: `Previously scanned at ${ticket.usedAt ? new Date(ticket.usedAt).toLocaleTimeString() : 'unknown time'}`,
                         ticket: ticket
                     };
                 }
@@ -1011,6 +1005,12 @@
                     newTickets.forEach(newTicket => {
                         if (!existingIds.has(newTicket.id)) {
                             this.tickets.push(newTicket);
+                        } else {
+                            // Update existing ticket if not used
+                            const existing = this.tickets.find(t => t.id === newTicket.id);
+                            if (existing && !existing.used) {
+                                Object.assign(existing, newTicket);
+                            }
                         }
                     });
                 }
@@ -1059,149 +1059,125 @@
         }
 
         // ==============================================
-        // QR SCANNER
+        // QR SCANNER MANAGER
         // ==============================================
-        class QRScanner {
-            constructor() {
+        class QRScannerManager {
+            constructor(ticketManager) {
+                this.ticketManager = ticketManager;
                 this.scanner = null;
-                this.stream = null;
                 this.isScanning = false;
-                this.currentCamera = 'environment';
-                this.flashOn = false;
+                this.currentCameraId = null;
+                this.cameras = [];
+                this.currentCameraIndex = 0;
                 this.scannerName = StorageManager.loadScannerName();
             }
 
-            async start() {
+            async init() {
+                await this.setupScanner();
+                this.setupEventListeners();
+            }
+
+            async setupScanner() {
+                try {
+                    // Get available cameras
+                    const devices = await Html5Qrcode.getCameras();
+                    this.cameras = devices;
+                    
+                    if (this.cameras.length === 0) {
+                        throw new Error('No cameras found');
+                    }
+                    
+                    // Initialize scanner
+                    this.scanner = new Html5QrcodeScanner(
+                        "qr-reader",
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            rememberLastUsedCamera: true,
+                            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                        },
+                        false
+                    );
+                    
+                    console.log('QR Scanner initialized with', this.cameras.length, 'cameras');
+                    
+                } catch (error) {
+                    console.error('Scanner setup error:', error);
+                    showToast('Camera setup failed: ' + error.message, 'error');
+                }
+            }
+
+            async startScanner() {
+                if (this.isScanning) return;
+                
                 try {
                     showLoading(true);
                     
-                    const constraints = {
-                        video: {
-                            facingMode: this.currentCamera,
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        },
-                        audio: false
-                    };
-
-                    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    const video = document.getElementById('scanner-viewport');
-                    video.srcObject = this.stream;
+                    if (!this.scanner) {
+                        await this.setupScanner();
+                    }
                     
-                    // Start QR scanning
-                    await this.setupQRScanner();
+                    // Reset validation display
+                    this.resetValidationDisplay();
+                    
+                    // Start scanning
+                    await this.scanner.render(
+                        (decodedText, decodedResult) => this.onScanSuccess(decodedText, decodedResult),
+                        (errorMessage) => this.onScanError(errorMessage)
+                    );
                     
                     this.isScanning = true;
+                    showToast('Camera started successfully', 'success');
                     showLoading(false);
                     
                 } catch (error) {
-                    console.error('Camera error:', error);
-                    showToast('Camera access denied or not available', 'error');
+                    console.error('Error starting scanner:', error);
+                    showToast('Failed to start camera: ' + error.message, 'error');
                     showLoading(false);
                 }
             }
 
-            async setupQRScanner() {
-                // Dynamically load QR scanner library
-                if (!window.BarcodeDetector) {
-                    await this.loadBarcodeDetector();
-                }
-
-                if (window.BarcodeDetector) {
-                    this.scanner = new BarcodeDetector({ formats: ['qr_code'] });
-                    this.startDetection();
-                } else {
-                    // Fallback to manual QR detection
-                    this.startCanvasDetection();
-                }
-            }
-
-            async loadBarcodeDetector() {
-                return new Promise((resolve) => {
-                    if ('BarcodeDetector' in window) {
-                        resolve();
-                        return;
-                    }
-                    
-                    // Try to polyfill
-                    const script = document.createElement('script');
-                    script.onload = resolve;
-                    script.onerror = resolve; // Continue even if fails
-                    document.head.appendChild(script);
-                });
-            }
-
-            async startDetection() {
-                const video = document.getElementById('scanner-viewport');
+            stopScanner() {
+                if (!this.isScanning || !this.scanner) return;
                 
-                const detect = async () => {
-                    if (!this.isScanning) return;
-                    
+                try {
+                    this.scanner.clear();
+                    this.isScanning = false;
+                    showToast('Camera stopped', 'warning');
+                } catch (error) {
+                    console.error('Error stopping scanner:', error);
+                }
+            }
+
+            async switchCamera() {
+                if (!this.isScanning || this.cameras.length < 2) return;
+                
+                this.stopScanner();
+                this.currentCameraIndex = (this.currentCameraIndex + 1) % this.cameras.length;
+                
+                setTimeout(async () => {
                     try {
-                        const barcodes = await this.scanner.detect(video);
-                        
-                        if (barcodes.length > 0) {
-                            const ticketId = barcodes[0].rawValue.trim();
-                            this.handleScan(ticketId);
-                        }
+                        await this.startScanner();
+                        showToast(`Switched to ${this.cameras[this.currentCameraIndex].label}`, 'info');
                     } catch (error) {
-                        // Silent fail - browser may not support BarcodeDetector
+                        console.error('Error switching camera:', error);
                     }
-                    
-                    requestAnimationFrame(detect);
-                };
-                
-                detect();
+                }, 500);
             }
 
-            startCanvasDetection() {
-                // Simple canvas-based QR detection (basic implementation)
-                const video = document.getElementById('scanner-viewport');
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+            onScanSuccess(decodedText, decodedResult) {
+                const ticketId = decodedText.trim();
+                console.log('Ticket scanned:', ticketId);
                 
-                const detect = () => {
-                    if (!this.isScanning) return;
-                    
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Get center area for QR detection
-                    const centerX = canvas.width / 2;
-                    const centerY = canvas.height / 2;
-                    const size = 200;
-                    
-                    const imageData = ctx.getImageData(centerX - size/2, centerY - size/2, size, size);
-                    
-                    // Simple brightness detection (placeholder for real QR decoding)
-                    let totalBrightness = 0;
-                    for (let i = 0; i < imageData.data.length; i += 4) {
-                        totalBrightness += (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-                    }
-                    
-                    // This is just a placeholder - in production, use a proper QR library
-                    requestAnimationFrame(detect);
-                };
-                
-                detect();
-            }
-
-            handleScan(ticketId) {
-                if (!this.isScanning) return;
-                
-                // Debounce scans
-                if (this.lastScan && Date.now() - this.lastScan < 2000) return;
-                this.lastScan = Date.now();
-                
-                const result = ticketManager.validateTicket(ticketId, this.scannerName);
+                const result = this.ticketManager.validateTicket(ticketId, this.scannerName);
                 this.showResult(result);
-                
-                // Briefly pause scanning
-                this.isScanning = false;
-                setTimeout(() => {
-                    this.isScanning = true;
-                }, 2000);
+            }
+
+            onScanError(errorMessage) {
+                // Suppress common error messages
+                if (!errorMessage.includes('NotFoundException')) {
+                    console.log('Scan error:', errorMessage);
+                }
             }
 
             showResult(result) {
@@ -1237,6 +1213,18 @@
                 
                 // Play sound
                 this.playScanSound(result.status);
+                
+                // Auto-hide after 5 seconds for invalid/used tickets
+                if (result.status !== 'valid') {
+                    setTimeout(() => {
+                        this.resetValidationDisplay();
+                    }, 5000);
+                }
+            }
+
+            resetValidationDisplay() {
+                const resultEl = document.getElementById('validationResult');
+                resultEl.style.display = 'none';
             }
 
             playScanSound(status) {
@@ -1264,37 +1252,10 @@
                 }
             }
 
-            async switchCamera() {
-                this.currentCamera = this.currentCamera === 'environment' ? 'user' : 'environment';
-                await this.stop();
-                await this.start();
-            }
-
-            async toggleFlash() {
-                if (!this.stream) return;
-                
-                try {
-                    const track = this.stream.getVideoTracks()[0];
-                    await track.applyConstraints({
-                        advanced: [{ torch: !this.flashOn }]
-                    });
-                    this.flashOn = !this.flashOn;
-                    document.getElementById('toggleFlashBtn').textContent = `Flash: ${this.flashOn ? 'ON' : 'OFF'}`;
-                } catch (error) {
-                    console.log('Flash not supported');
-                }
-            }
-
-            async stop() {
-                this.isScanning = false;
-                
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                    this.stream = null;
-                }
-                
-                const video = document.getElementById('scanner-viewport');
-                video.srcObject = null;
+            setupEventListeners() {
+                document.getElementById('closeResultBtn').addEventListener('click', () => {
+                    this.resetValidationDisplay();
+                });
             }
         }
 
@@ -1302,7 +1263,7 @@
         // UI FUNCTIONS
         // ==============================================
         let ticketManager = new TicketManager();
-        let qrScanner = new QRScanner();
+        let qrScanner = null;
 
         function showLoading(show) {
             document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
@@ -1326,9 +1287,17 @@
             
             const scannerName = document.getElementById('scannerName').value || 'Scanner';
             StorageManager.saveScannerName(scannerName);
+            
+            // Initialize scanner
+            if (!qrScanner) {
+                qrScanner = new QRScannerManager(ticketManager);
+            }
             qrScanner.scannerName = scannerName;
             
-            setTimeout(() => qrScanner.start(), 100);
+            // Start scanner after a brief delay
+            setTimeout(() => {
+                qrScanner.startScanner();
+            }, 300);
         }
 
         function switchToAdminPanel() {
@@ -1336,12 +1305,12 @@
             document.getElementById('scannerMode').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
+            if (qrScanner && qrScanner.isScanning) {
+                qrScanner.stopScanner();
+            }
+            
             ticketManager.updateStats();
             renderScanHistory();
-            
-            if (qrScanner.isScanning) {
-                qrScanner.stop();
-            }
         }
 
         function logout() {
@@ -1349,8 +1318,8 @@
             document.getElementById('scannerMode').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'none';
             
-            if (qrScanner.isScanning) {
-                qrScanner.stop();
+            if (qrScanner && qrScanner.isScanning) {
+                qrScanner.stopScanner();
             }
             
             // Reset forms
@@ -1361,7 +1330,7 @@
 
         function renderScanHistory() {
             const scanList = document.getElementById('scanList');
-            const scans = StorageManager.loadScans().slice(0, 20); // Show last 20 scans
+            const scans = StorageManager.loadScans().slice(0, 20);
             
             scanList.innerHTML = '';
             
@@ -1421,12 +1390,18 @@
             document.getElementById('goToScannerBtn').addEventListener('click', switchToScannerMode);
             
             // Scanner controls
-            document.getElementById('switchCameraBtn').addEventListener('click', () => qrScanner.switchCamera());
-            document.getElementById('toggleFlashBtn').addEventListener('click', () => qrScanner.toggleFlash());
-            document.getElementById('logoutScannerBtn').addEventListener('click', logout);
-            document.getElementById('closeResultBtn').addEventListener('click', () => {
-                document.getElementById('validationResult').style.display = 'none';
+            document.getElementById('switchCameraBtn').addEventListener('click', () => {
+                if (qrScanner) {
+                    qrScanner.switchCamera();
+                }
             });
+            
+            document.getElementById('toggleFlashBtn').addEventListener('click', () => {
+                // Flash control will be implemented based on camera capabilities
+                showToast('Flash control not available on all devices', 'warning');
+            });
+            
+            document.getElementById('logoutScannerBtn').addEventListener('click', logout);
             
             // Admin controls
             document.getElementById('logoutAdminBtn').addEventListener('click', logout);
@@ -1490,20 +1465,22 @@
                 showToast('Example data loaded', 'info');
             }
             
-            // Auto-refresh scan history every 10 seconds
+            // Auto-refresh scan history every 10 seconds in admin panel
             setInterval(() => {
                 if (document.getElementById('adminPanel').style.display !== 'none') {
                     renderScanHistory();
                     ticketManager.updateStats();
                 }
             }, 10000);
-        });
-
-        // Handle page visibility
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden' && qrScanner.isScanning) {
-                qrScanner.stop();
-            }
+            
+            // Handle page visibility
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden' && qrScanner && qrScanner.isScanning) {
+                    qrScanner.stopScanner();
+                }
+            });
+            
+            console.log('Ticket Validator System Ready');
         });
     </script>
 </body>
