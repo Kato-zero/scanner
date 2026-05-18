@@ -1,132 +1,653 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Ticket Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Professional Ticket Scanner | Event Check-in System</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
   <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: white;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    #reader {
-      width: 300px;
-      margin: auto;
-      margin-top: 20px;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, #a0a8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8892b0;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 20px;
     }
 
     button {
-      padding: 10px;
-      margin: 10px;
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 50px;
       cursor: pointer;
+      transition: all 0.3s ease;
+      background: #2a2f4f;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #2196F3, #1976D2);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #f44336, #d32f2f);
+    }
+
+    .scan-area {
+      background: #0f1222;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    /* Custom styling for the scanner viewfinder */
+    #reader video {
+      border-radius: 15px;
+      width: 100%;
+    }
+
+    #reader__scan_region {
+      background: #0a0e27;
+      border-radius: 15px;
     }
 
     #result {
       margin-top: 20px;
-      padding: 15px;
-      border-radius: 10px;
-      font-size: 18px;
+      padding: 20px;
+      border-radius: 15px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      animation: slideUp 0.4s ease;
     }
 
-    .valid { background: green; }
-    .invalid { background: red; }
-    .used { background: orange; }
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-valid {
+      background: linear-gradient(135deg, #00c853, #009624);
+      border-left: 5px solid #69f0ae;
+      box-shadow: 0 5px 20px rgba(0,200,83,0.3);
+    }
+
+    .result-invalid {
+      background: linear-gradient(135deg, #d32f2f, #b71c1c);
+      border-left: 5px solid #ff8a80;
+      box-shadow: 0 5px 20px rgba(211,47,47,0.3);
+    }
+
+    .result-used {
+      background: linear-gradient(135deg, #f57c00, #e65100);
+      border-left: 5px solid #ffb74d;
+      box-shadow: 0 5px 20px rgba(245,124,0,0.3);
+    }
+
+    .result-error {
+      background: linear-gradient(135deg, #757575, #424242);
+      border-left: 5px solid #bdbdbd;
+    }
+
+    .ticket-details {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+
+    .detail-label {
+      font-weight: bold;
+      opacity: 0.9;
+    }
+
+    .detail-value {
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .scan-status {
+      text-align: center;
+      font-size: 14px;
+      color: #8892b0;
+      margin-top: 15px;
+    }
+
+    .scanning-active {
+      color: #4caf50;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .info-panel {
+      background: rgba(255,255,255,0.05);
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 15px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      
+      button {
+        padding: 10px 20px;
+        font-size: 14px;
+      }
+      
+      .detail-row {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 
 <body>
+<div class="container">
+  <h2>🎟️ Smart Ticket Scanner</h2>
+  <div class="subtitle">Professional Event Check-in System</div>
 
-<h2>🎟 Ticket Scanner</h2>
+  <div class="button-group">
+    <button class="btn-start" onclick="startScan()">📷 Start Scanner</button>
+    <button class="btn-stop" onclick="stopScan()">⏹️ Stop Scanner</button>
+  </div>
 
-<button onclick="startScan()">Start Scan</button>
-<button onclick="stopScan()">Stop Scan</button>
+  <div class="scan-area">
+    <div id="reader"></div>
+    <div class="scan-status" id="scanStatus">
+      ⚡ Ready to scan tickets
+    </div>
+  </div>
 
-<div id="reader"></div>
-<div id="result">Waiting for scan...</div>
+  <div id="result">
+    📱 Point camera at QR code to scan ticket
+  </div>
+
+  <div class="info-panel">
+    💡 Tip: Ensure good lighting and hold QR code steady in the frame
+  </div>
+</div>
 
 <script>
-let scanner;
+// Global scanner instance
+let html5QrCodeScanner = null;
+let isScanning = false;
+let lastScannedCode = null;
+let scanCooldown = false;
 
-// 🔊 Beep sound
-function beep(type) {
-  const audio = new Audio(
-    type === "valid"
-      ? "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-      : "https://actions.google.com/sounds/v1/alarms/buzzer.ogg"
-  );
-  audio.play();
-}
-
-// 🚀 START SCAN
-function startScan() {
-  scanner = new Html5Qrcode("reader");
-
-  scanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (decodedText) => {
-
-      const code = decodedText.trim();
-
-      verify(code);
+// 🔊 Enhanced beep sounds (using Web Audio API for better compatibility)
+function playBeep(type) {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    if (type === 'valid') {
+      // Pleasant success beep (two tones)
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 0.3;
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      
+      // Second beep
+      setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.value = 1174.66; // D6
+        osc2.connect(gainNode);
+        osc2.start();
+        gainNode.gain.value = 0.3;
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
+        osc2.stop(audioContext.currentTime + 0.2);
+      }, 150);
+    } else {
+      // Error buzz
+      oscillator.type = 'square';
+      oscillator.frequency.value = 220;
+      gainNode.gain.value = 0.2;
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4);
+      oscillator.stop(audioContext.currentTime + 0.4);
     }
-  );
+    
+    setTimeout(() => audioContext.close(), 500);
+  } catch(e) {
+    // Fallback for browsers that don't support Web Audio API
+    const audio = new Audio(
+      type === "valid"
+        ? "data:audio/wav;base64,U3RlYWx0aCBzb3VuZA=="
+        : "data:audio/wav;base64,QnV6emVy"
+    );
+    audio.play().catch(() => console.log("Audio not supported"));
+  }
 }
 
-// ⛔ STOP SCAN
-function stopScan() {
-  if (scanner) scanner.stop();
+// Vibrate if supported (mobile devices)
+function vibrate(pattern) {
+  if (window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(pattern);
+  }
 }
 
-// 🔍 VERIFY TICKET
-function verify(code) {
+// Update scan status UI
+function updateScanStatus(message, isActive = false) {
+  const statusDiv = document.getElementById('scanStatus');
+  statusDiv.innerHTML = message;
+  if (isActive) {
+    statusDiv.classList.add('scanning-active');
+  } else {
+    statusDiv.classList.remove('scanning-active');
+  }
+}
 
-  const url =
-    "https://script.google.com/macros/s/AKfycbxs2Ycz__LlZk3kJ7m4z0o_6r1n_8x_prI9_ZkF1fQUWfG_PiboqvyuesN05d6E3NgOog/exec?code=" + code;
+// 🚀 START SCAN - FIXED VERSION
+async function startScan() {
+  // Clean up existing scanner if any
+  if (html5QrCodeScanner) {
+    try {
+      await html5QrCodeScanner.stop();
+      await html5QrCodeScanner.clear();
+    } catch(e) {
+      console.log("Error stopping previous scanner:", e);
+    }
+    html5QrCodeScanner = null;
+  }
+  
+  const readerElement = document.getElementById("reader");
+  
+  // Clear the reader div to avoid duplication issues
+  readerElement.innerHTML = "";
+  
+  // Create new scanner instance
+  html5QrCodeScanner = new Html5Qrcode("reader");
+  
+  const config = {
+    fps: 15,
+    qrbox: { width: 280, height: 280 },
+    aspectRatio: 1.0,
+    disableFlip: false
+  };
+  
+  const scanningOptions = {
+    facingMode: "environment", // Use back camera
+  };
+  
+  updateScanStatus("📸 Initializing camera...", true);
+  
+  try {
+    await html5QrCodeScanner.start(
+      scanningOptions,
+      config,
+      (decodedText, decodedResult) => {
+        // Success callback - QR code detected
+        handleSuccessfulScan(decodedText);
+      },
+      (errorMessage) => {
+        // Error callback - not critical, just log quietly
+        // This fires frequently during normal operation
+        // console.log("Scanning error:", errorMessage);
+      }
+    );
+    
+    isScanning = true;
+    updateScanStatus("✅ Scanner active - Point at QR code", true);
+    
+    // Reset last scanned on new scan session
+    lastScannedCode = null;
+    scanCooldown = false;
+    
+  } catch (err) {
+    console.error("Failed to start scanner:", err);
+    updateScanStatus("❌ Camera access failed. Check permissions.", false);
+    document.getElementById("result").className = "result-error";
+    document.getElementById("result").innerHTML = "❌ Camera Error: " + err.message + "<br><br>Please ensure camera permissions are granted and you're using HTTPS.";
+  }
+}
 
-  fetch(url)
-    .then(res => res.json())
+// Handle successful scan with cooldown to prevent duplicate scans
+function handleSuccessfulScan(decodedText) {
+  const code = decodedText.trim();
+  const currentTime = Date.now();
+  
+  // Prevent scanning the same code multiple times rapidly
+  if (lastScannedCode === code && scanCooldown) {
+    console.log("Duplicate scan prevented");
+    return;
+  }
+  
+  // Trigger haptic feedback
+  vibrate(100);
+  
+  // Update last scan info
+  lastScannedCode = code;
+  scanCooldown = true;
+  
+  // Show scanning feedback
+  updateScanStatus("🔍 Scanning ticket...", true);
+  
+  // Verify ticket with server
+  verifyTicket(code);
+  
+  // Reset cooldown after 2 seconds
+  setTimeout(() => {
+    scanCooldown = false;
+  }, 2000);
+}
+
+// ⛔ STOP SCAN - Fixed cleanup
+async function stopScan() {
+  if (html5QrCodeScanner && isScanning) {
+    try {
+      await html5QrCodeScanner.stop();
+      await html5QrCodeScanner.clear();
+      updateScanStatus("⏹️ Scanner stopped", false);
+      isScanning = false;
+      
+      // Reset result display
+      document.getElementById("result").className = "";
+      document.getElementById("result").innerHTML = "📱 Scanner stopped. Click 'Start Scanner' to begin scanning.";
+    } catch (err) {
+      console.error("Error stopping scanner:", err);
+      updateScanStatus("⚠️ Error stopping scanner", false);
+    }
+  } else {
+    updateScanStatus("ℹ️ No active scanner", false);
+  }
+}
+
+// 🔍 VERIFY TICKET with improved error handling and loading state
+function verifyTicket(code) {
+  const resultDiv = document.getElementById("result");
+  
+  // Show loading state
+  resultDiv.className = "";
+  resultDiv.innerHTML = `
+    <div style="text-align: center;">
+      <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite;"></div>
+      <p style="margin-top: 10px;">Verifying ticket...</p>
+    </div>
+    <style>
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  
+  // IMPORTANT: Use the exact Apps Script URL from your original code
+  // Make sure this URL matches your deployed Apps Script web app
+  const appsScriptUrl = "https://script.google.com/macros/s/AKfycbxs2Ycz__LlZk3kJ7m4z0o_6r1n_8x_prI9_ZkF1fQUWfG_PiboqvyuesN05d6E3NgOog/exec";
+  const url = `${appsScriptUrl}?code=${encodeURIComponent(code)}`;
+  
+  // Add timeout for fetch
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  
+  fetch(url, { signal: controller.signal })
+    .then(res => {
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      return res.json();
+    })
     .then(data => {
-
-      const box = document.getElementById("result");
-
+      console.log("Server response:", data);
+      
       if (data.status === "VALID") {
-
-        beep("valid");
-
-        box.className = "valid";
-        box.innerHTML =
-          "✅ VALID TICKET<br><br>" +
-          "Name: " + data.fullName + "<br>" +
-          "Event: " + data.eventName + "<br>" +
-          "Venue: " + data.venue;
-
+        // Successful validation
+        playBeep("valid");
+        vibrate([200, 100, 200]);
+        
+        resultDiv.className = "result-valid";
+        
+        // Format date and time nicely
+        const eventDate = data.eventDate || "N/A";
+        const eventTime = data.eventTime || "N/A";
+        
+        resultDiv.innerHTML = `
+          <div style="text-align: center;">
+            <div class="status-badge" style="background: rgba(255,255,255,0.2);">✅ TICKET VALIDATED</div>
+            <div style="font-size: 32px; margin: 10px 0;">🎟️</div>
+            <div style="font-size: 20px; font-weight: bold;">${escapeHtml(data.fullName || "Guest")}</div>
+          </div>
+          <div class="ticket-details">
+            <div class="detail-row">
+              <span class="detail-label">🎪 Event:</span>
+              <span class="detail-value">${escapeHtml(data.eventName || "N/A")}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">📍 Venue:</span>
+              <span class="detail-value">${escapeHtml(data.venue || "N/A")}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">📅 Date:</span>
+              <span class="detail-value">${escapeHtml(eventDate)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">⏰ Time:</span>
+              <span class="detail-value">${escapeHtml(eventTime)}</span>
+            </div>
+            ${data.ticketType ? `<div class="detail-row">
+              <span class="detail-label">🎫 Ticket Type:</span>
+              <span class="detail-value">${escapeHtml(data.ticketType)}</span>
+            </div>` : ''}
+            <div class="detail-row">
+              <span class="detail-label">🕐 Check-in Time:</span>
+              <span class="detail-value">${new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 15px; font-size: 12px; opacity: 0.8;">
+            Scan successful • Ticket marked as used
+          </div>
+        `;
+        
+        updateScanStatus("✅ Valid ticket scanned!", false);
+        
       } 
       else if (data.status === "USED") {
-
-        beep("invalid");
-
-        box.className = "used";
-        box.innerHTML = "⚠ TICKET ALREADY USED";
-
+        playBeep("invalid");
+        vibrate([300]);
+        
+        resultDiv.className = "result-used";
+        resultDiv.innerHTML = `
+          <div style="text-align: center;">
+            <div class="status-badge" style="background: rgba(255,255,255,0.2);">⚠️ TICKET ALREADY USED</div>
+            <div style="font-size: 48px; margin: 10px 0;">🔄</div>
+            <p>This ticket has already been scanned and checked in.</p>
+            <p style="font-size: 13px; margin-top: 10px;">Each ticket can only be used once.</p>
+          </div>
+        `;
+        
+        updateScanStatus("⚠️ Ticket already used", false);
       } 
       else {
-
-        beep("invalid");
-
-        box.className = "invalid";
-        box.innerHTML = "❌ INVALID TICKET";
+        playBeep("invalid");
+        vibrate([300]);
+        
+        resultDiv.className = "result-invalid";
+        resultDiv.innerHTML = `
+          <div style="text-align: center;">
+            <div class="status-badge" style="background: rgba(255,255,255,0.2);">❌ INVALID TICKET</div>
+            <div style="font-size: 48px; margin: 10px 0;">🚫</div>
+            <p>The scanned QR code is not a valid ticket in the system.</p>
+            <p style="font-size: 13px; margin-top: 10px;">Code: ${escapeHtml(code.substring(0, 20))}${code.length > 20 ? '...' : ''}</p>
+          </div>
+        `;
+        
+        updateScanStatus("❌ Invalid ticket rejected", false);
       }
-
+      
+      // Auto-clear result after 5 seconds for valid scans, 3 seconds for others
+      const displayDuration = data.status === "VALID" ? 5000 : 3000;
+      setTimeout(() => {
+        if (resultDiv.className !== "") {
+          // Don't clear if a new scan happened recently
+          const timeSinceLastScan = Date.now() - (lastScannedTime || 0);
+          if (timeSinceLastScan > 2000) {
+            resultDiv.className = "";
+            resultDiv.innerHTML = "📱 Ready for next scan";
+          }
+        }
+      }, displayDuration);
+      
+      lastScannedTime = Date.now();
+      
     })
-    .catch(() => {
-      document.getElementById("result").className = "invalid";
-      document.getElementById("result").innerHTML = "⚠ ERROR CONNECTING";
+    .catch((error) => {
+      clearTimeout(timeoutId);
+      console.error("Fetch error:", error);
+      
+      playBeep("invalid");
+      vibrate([150, 150, 150]);
+      
+      resultDiv.className = "result-error";
+      
+      let errorMessage = "⚠️ CONNECTION ERROR\n\n";
+      if (error.name === "AbortError") {
+        errorMessage += "Request timed out. Please check your internet connection.";
+      } else if (error.message.includes("Failed to fetch")) {
+        errorMessage += "Cannot reach server. Check your internet connection and ensure the Apps Script URL is correct and deployed.";
+      } else {
+        errorMessage += error.message || "Unknown error occurred";
+      }
+      
+      resultDiv.innerHTML = `
+        <div style="text-align: center;">
+          <div class="status-badge" style="background: rgba(255,255,255,0.2);">⚠️ NETWORK ERROR</div>
+          <div style="font-size: 48px; margin: 10px 0;">📡</div>
+          <p>${errorMessage}</p>
+          <p style="font-size: 12px; margin-top: 10px;">Please check:<br>
+          • Internet connection<br>
+          • Apps Script deployment status<br>
+          • CORS settings (must deploy as web app)</p>
+        </div>
+      `;
+      
+      updateScanStatus("⚠️ Connection error - check network", false);
     });
 }
+
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(str) {
+  if (!str) return "N/A";
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Track last scan time
+let lastScannedTime = 0;
+
+// Clean up on page unload
+window.addEventListener('beforeunload', async () => {
+  if (html5QrCodeScanner && isScanning) {
+    try {
+      await html5QrCodeScanner.stop();
+      await html5QrCodeScanner.clear();
+    } catch(e) {
+      // Ignore cleanup errors
+    }
+  }
+});
+
+// Initialize on page load with a welcome message
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("Ticket Scanner initialized");
+  updateScanStatus("⚡ Ready - Press 'Start Scanner'", false);
+});
 </script>
 
 </body>
